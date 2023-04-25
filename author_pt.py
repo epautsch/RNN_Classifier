@@ -212,6 +212,7 @@ for epoch in range(num_epochs):
         best_val_loss = val_loss
         torch.save(model.state_dict(), 'best_model.pt')
 
+    print(optimizer.param_groups['lr'])
     scheduler.step()
 
 # Load the best model and evaluate on the test set
