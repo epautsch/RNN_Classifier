@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
+# In[10]:
 
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
-from torch.optim.lr_scheduler import CosineAnnealingLR
+from torch.optim.lr_scheduler import CosineAnnealingLR, CosineAnnealingWarmRestarts
 from sklearn.model_selection import train_test_split
 import pandas as pd
 import numpy as np
@@ -19,7 +19,7 @@ from torchtext.data.utils import get_tokenizer
 from torchtext.vocab import build_vocab_from_iterator
 
 
-# In[ ]:
+# In[2]:
 
 
 class TextDataset(Dataset):
@@ -38,7 +38,7 @@ def yield_tokens(texts):
         yield tokenizer(text)
 
 
-# In[ ]:
+# In[3]:
 
 
 class LSTMClassifier(nn.Module):
@@ -56,7 +56,7 @@ class LSTMClassifier(nn.Module):
         return x
 
 
-# In[ ]:
+# In[4]:
 
 
 def train_epoch(model, train_loader, criterion, optimizer, device, epoch):
@@ -102,7 +102,7 @@ def evaluate(model, test_loader, criterion, device, epoch):
     return running_loss / len(test_loader), correct / total
 
 
-# In[ ]:
+# In[5]:
 
 
 torch.manual_seed(7)
@@ -134,7 +134,7 @@ labels = le.fit_transform(labels)
 X_train, X_test, y_train, y_test = train_test_split(sequences, labels, test_size=0.2, random_state=42)
 
 
-# In[ ]:
+# In[6]:
 
 
 train_dataset = TextDataset(X_train, y_train)
@@ -145,7 +145,7 @@ train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=batch_size)
 
 
-# In[ ]:
+# In[25]:
 
 
 vocab_size = len(vocab)
@@ -158,21 +158,42 @@ model = LSTMClassifier(vocab_size, embedding_dim, hidden_dim, output_dim, num_la
 
 # Loss function and optimizer
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.001)
-
-# Learning rate scheduler
-scheduler = CosineAnnealingLR(optimizer, T_max=50)
+optimizer = optim.Adam(model.parameters(), lr=0.0005)
 
 # Training loop
-num_epochs = 50
+num_epochs = 100
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
 model.to(device)
+
+# Learning rate scheduler
+# scheduler = CosineAnnealingLR(optimizer, T_max=num_epochs)
+scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=int(num_epochs / 5), T_mult=4, eta_min=1e-6)
+
 
 useTwoGPUs = True
 if torch.cuda.device_count() > 1 and useTwoGPUs:
     print(f'Using {torch.cuda.device_count()} GPUs')
     model = nn.DataParallel(model)
+
+
+# In[26]:
+
+
+# import matplotlib.pyplot as plt
+# import numpy as np
+#
+# epochs = num_epochs
+# lr = []
+# for i in range(epochs):
+#     scheduler.step()
+#     lr.append(optimizer.param_groups[0]['lr'])
+#
+# plt.plot(np.arange(epochs), lr)
+# plt.xlabel('Epochs')
+# plt.ylabel('Learning Rate')
+# plt.title('Cosine Annealing Learning Rate Schedule')
+# plt.show()
 
 
 # In[ ]:
