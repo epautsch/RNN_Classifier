@@ -176,7 +176,7 @@ criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.0005, weight_decay=1e-4)
 
 # Training loop
-num_epochs = 100
+num_epochs = 30
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
 model.to(device)
@@ -193,6 +193,8 @@ if load_best_model and os.path.exists(best_model_path):
     state_dict = remove_module_prefix(state_dict)
     model.load_state_dict(state_dict)
     print('Loaded best saved model...')
+    best_val_loss, _ = evaluate(model, test_loader, criterion, device)
+    print(f'Validation loss of the loaded model: {best_val_loss:.4f}')
 
 # Learning rate scheduler
 # scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.9, patience=2, verbose=True)
@@ -228,7 +230,8 @@ plt.show()
 # In[ ]:
 
 
-best_val_loss = float('inf')
+if not (load_best_model and os.path.exists(best_model_path)):
+    best_val_loss = float('inf')
 
 for epoch in range(num_epochs):
     print(optimizer.param_groups[0]['lr'])
