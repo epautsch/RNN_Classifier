@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[ ]:
+
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -10,41 +16,12 @@ from torch.nn.utils.rnn import pad_sequence
 from sklearn.preprocessing import LabelEncoder
 from collections import Counter
 from torchtext.data.utils import get_tokenizer
-from torchtext.vocab import Vocab
-
-# Fix random seed for reproducibility
-torch.manual_seed(7)
-
-# Load the data
-data = pd.read_csv('training.csv', usecols=['text', 'author'], sep=',', encoding='ISO-8859-1')
-texts = data['text']  # Extract the text column
-labels = data['author'] - 1  # Extract the label column
-
-# Tokenize the text and create the vocabulary
-tokenizer = get_tokenizer('basic_english')
-counter = Counter()
-for text in texts:
-    counter.update(tokenizer(text))
-vocab = Vocab(counter, min_freq=1, specials=('<unk>', '<pad>'))
-
-# Convert the text into numerical sequences
-sequences = [torch.tensor([vocab[token] for token in tokenizer(text)]) for text in texts]
-
-# Pad the sequences to a fixed length
-max_sequence_length = 1000
-sequences = pad_sequence(sequences, batch_first=True, padding_value=vocab['<pad>'])
-sequences = sequences[:, :max_sequence_length]
-
-# Encode the labels into integers
-num_classes = 50
-le = LabelEncoder()
-labels = le.fit_transform(labels)
-
-# Split the data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(sequences, labels, test_size=0.2, random_state=42)
+from torchtext.vocab import build_vocab_from_iterator
 
 
-# Create the PyTorch datasets and data loaders
+# In[ ]:
+
+
 class TextDataset(Dataset):
     def __init__(self, sequences, labels):
         self.sequences = sequences
@@ -56,15 +33,14 @@ class TextDataset(Dataset):
     def __getitem__(self, idx):
         return self.sequences[idx], self.labels[idx]
 
-
-train_dataset = TextDataset(X_train, y_train)
-test_dataset = TextDataset(X_test, y_test)
-
-train_loader = DataLoader(train_dataset, batch_size=128, shuffle=True)
-test_loader = DataLoader(test_dataset, batch_size=128)
+def yield_tokens(texts):
+    for text in texts:
+        yield tokenizer(text)
 
 
-# Define the model
+# In[ ]:
+
+
 class LSTMClassifier(nn.Module):
     def __init__(self, vocab_size, embed_dim, hidden_dim, output_dim, num_layers, dropout=0.5):
         super().__init__()
@@ -80,25 +56,7 @@ class LSTMClassifier(nn.Module):
         return x
 
 
-vocab_size = len(vocab)
-embedding_dim = 128
-hidden_dim = 400
-output_dim = num_classes
-num_layers = 3
-
-model = LSTMClassifier(vocab_size, embedding_dim, hidden_dim, output_dim, num_layers)
-
-# Loss function and optimizer
-criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.001)
-
-# Learning rate scheduler
-scheduler = CosineAnnealingLR(optimizer, T_max=50)
-
-# Training loop
-num_epochs = 50
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model.to(device)
+# In[ ]:
 
 
 def train_epoch(model, train_loader, criterion, optimizer, device):
@@ -141,6 +99,76 @@ def evaluate(model, test_loader, criterion, device):
     return running_loss / len(test_loader), correct / total
 
 
+# In[ ]:
+
+
+torch.manual_seed(7)
+
+# Load the data
+data = pd.read_csv('training.csv', usecols=['text', 'author'], sep=',', encoding='ISO-8859-1')
+texts = data['text']  # Extract the text column
+labels = data['author'] - 1  # Extract the label column
+
+# Tokenize the text and create the vocabulary
+tokenizer = get_tokenizer('basic_english')
+vocab = build_vocab_from_iterator(yield_tokens(texts), min_freq=1, specials=('<unk>', '<pad>'))
+vocab.set_default_index(vocab['<unk>'])
+
+# Convert the text into numerical sequences
+sequences = [torch.tensor([vocab[token] for token in tokenizer(text)]) for text in texts]
+
+# Pad the sequences to a fixed length
+max_sequence_length = 1000
+sequences = pad_sequence(sequences, batch_first=True, padding_value=vocab['<pad>'])
+sequences = sequences[:, :max_sequence_length]
+
+# Encode the labels into integers
+num_classes = 50
+le = LabelEncoder()
+labels = le.fit_transform(labels)
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(sequences, labels, test_size=0.2, random_state=42)
+
+
+# In[ ]:
+
+
+train_dataset = TextDataset(X_train, y_train)
+test_dataset = TextDataset(X_test, y_test)
+
+train_loader = DataLoader(train_dataset, batch_size=128, shuffle=True)
+test_loader = DataLoader(test_dataset, batch_size=128)
+
+
+# In[ ]:
+
+
+vocab_size = len(vocab)
+embedding_dim = 128
+hidden_dim = 400
+output_dim = num_classes
+num_layers = 3
+
+model = LSTMClassifier(vocab_size, embedding_dim, hidden_dim, output_dim, num_layers)
+
+# Loss function and optimizer
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=0.001)
+
+# Learning rate scheduler
+scheduler = CosineAnnealingLR(optimizer, T_max=50)
+
+# Training loop
+num_epochs = 50
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print(device)
+model.to(device)
+
+
+# In[ ]:
+
+
 best_val_loss = float('inf')
 
 for epoch in range(num_epochs):
@@ -160,3 +188,4 @@ for epoch in range(num_epochs):
 model.load_state_dict(torch.load('best_model.pt'))
 test_loss, test_acc = evaluate(model, test_loader, criterion, device)
 print(f'Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}')
+
