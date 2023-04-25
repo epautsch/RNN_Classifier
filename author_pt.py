@@ -140,7 +140,7 @@ X_train, X_test, y_train, y_test = train_test_split(sequences, labels, test_size
 train_dataset = TextDataset(X_train, y_train)
 test_dataset = TextDataset(X_test, y_test)
 
-batch_size = 512
+batch_size = 1024
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=batch_size)
 
@@ -212,7 +212,7 @@ for epoch in range(num_epochs):
         best_val_loss = val_loss
         torch.save(model.state_dict(), 'best_model.pt')
 
-    print(optimizer.param_groups['lr'])
+    print(optimizer.param_groups[0]['lr'])
     scheduler.step()
 
 # Load the best model and evaluate on the test set
