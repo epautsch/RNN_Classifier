@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[10]:
+# In[62]:
 
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
-from torch.optim.lr_scheduler import CosineAnnealingLR, CosineAnnealingWarmRestarts
+from torch.optim.lr_scheduler import CosineAnnealingLR, CosineAnnealingWarmRestarts, ReduceLROnPlateau
 from sklearn.model_selection import train_test_split
 import pandas as pd
 import numpy as np
@@ -155,7 +155,7 @@ train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=batch_size)
 
 
-# In[56]:
+# In[63]:
 
 
 vocab_size = len(vocab)
@@ -177,8 +177,9 @@ print(device)
 model.to(device)
 
 # Learning rate scheduler
+scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=2, verbose=True)
 # scheduler = CosineAnnealingLR(optimizer, T_max=num_epochs)
-scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=int((num_epochs - 20) / 10), T_mult=2, eta_min=1e-4)
+# scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=int((num_epochs - 20) / 10), T_mult=2, eta_min=1e-4)
 
 
 useTwoGPUs = True
@@ -187,7 +188,7 @@ if torch.cuda.device_count() > 1 and useTwoGPUs:
     model = nn.DataParallel(model)
 
 
-# In[57]:
+# In[64]:
 
 
 # import matplotlib.pyplot as plt
@@ -212,6 +213,7 @@ if torch.cuda.device_count() > 1 and useTwoGPUs:
 best_val_loss = float('inf')
 
 for epoch in range(num_epochs):
+    print(optimizer.param_groups[0]['lr'])
     train_loss, train_acc = train_epoch(model, train_loader, criterion, optimizer, device, epoch)
     val_loss, val_acc = evaluate(model, test_loader, criterion, device, epoch)
 
@@ -222,8 +224,7 @@ for epoch in range(num_epochs):
         best_val_loss = val_loss
         torch.save(model.state_dict(), 'best_model.pt')
 
-    print(optimizer.param_groups[0]['lr'])
-    scheduler.step()
+    scheduler.step(val_loss)
 
 # Load the best model and evaluate on the test set
 model.load_state_dict(torch.load('best_model.pt'))
