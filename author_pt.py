@@ -150,7 +150,7 @@ X_train, X_test, y_train, y_test = train_test_split(sequences, labels, test_size
 train_dataset = TextDataset(X_train, y_train)
 test_dataset = TextDataset(X_test, y_test)
 
-batch_size = 512
+batch_size = 256
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=batch_size)
 
@@ -177,7 +177,7 @@ print(device)
 model.to(device)
 
 # Learning rate scheduler
-scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=2, verbose=True)
+scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.9, patience=2, verbose=True)
 # scheduler = CosineAnnealingLR(optimizer, T_max=num_epochs)
 # scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=int((num_epochs - 20) / 10), T_mult=2, eta_min=1e-4)
 
