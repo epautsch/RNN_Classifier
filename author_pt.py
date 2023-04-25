@@ -181,8 +181,17 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
 model.to(device)
 
+def remove_module_prefix(state_dict):
+    new_state_dict = {}
+    for key, value in state_dict.items():
+        new_key = key.replace("module.", "")
+        new_state_dict[new_key] = value
+    return new_state_dict
+
 if load_best_model and os.path.exists(best_model_path):
-    model.load_state_dict(torch.load(best_model_path))
+    state_dict = torch.load(best_model_path)
+    state_dict = remove_module_prefix(state_dict)
+    model.load_state_dict(state_dict)
     print('Loaded best saved model...')
 
 # Learning rate scheduler
