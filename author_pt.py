@@ -89,7 +89,7 @@ def train_epoch(model, train_loader, criterion, optimizer, device, epoch):
         total += targets.size(0)
         correct += (predicted == targets).sum().item()
 
-        if batch_idx % 5 == 0:
+        if batch_idx % 20 == 0:
             print(f'Epoch: {epoch + 1}, Iterations: {batch_idx}, Loss: {loss.item()}')
 
     return running_loss / len(train_loader), correct / total
@@ -173,10 +173,10 @@ model = LSTMClassifier(vocab_size, embedding_dim, hidden_dim, output_dim, num_la
 
 # Loss function and optimizer
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.0005, weight_decay=1e-4)
+optimizer = optim.Adam(model.parameters(), lr=0.00025, weight_decay=1e-4)
 
 # Training loop
-num_epochs = 30
+num_epochs = 10
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
 model.to(device)
@@ -238,12 +238,12 @@ for epoch in range(num_epochs):
     train_loss, train_acc = train_epoch(model, train_loader, criterion, optimizer, device, epoch)
     val_loss, val_acc = evaluate(model, test_loader, criterion, device)
 
-    print(
-        f'Epoch {epoch + 1}/{num_epochs}, Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}, Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}')
+    print(f'Epoch {epoch + 1}/{num_epochs}, Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}, Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}')
 
     if val_loss < best_val_loss:
         best_val_loss = val_loss
         torch.save(model.state_dict(), best_model_path)
+        print('***NEW BEST MODEL SAVED***')
 
     # scheduler.step(val_loss)
     scheduler.step()
