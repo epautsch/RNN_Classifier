@@ -211,20 +211,20 @@ if torch.cuda.device_count() > 1 and useTwoGPUs:
 # In[13]:
 
 
-import matplotlib.pyplot as plt
-import numpy as np
-
-epochs = num_epochs
-lr = []
-for i in range(epochs):
-    scheduler.step()
-    lr.append(optimizer.param_groups[0]['lr'])
-
-plt.plot(np.arange(epochs), lr)
-plt.xlabel('Epochs')
-plt.ylabel('Learning Rate')
-plt.title('Cosine Annealing Learning Rate Schedule')
-plt.show()
+# import matplotlib.pyplot as plt
+# import numpy as np
+#
+# epochs = num_epochs
+# lr = []
+# for i in range(epochs):
+#     scheduler.step()
+#     lr.append(optimizer.param_groups[0]['lr'])
+#
+# plt.plot(np.arange(epochs), lr)
+# plt.xlabel('Epochs')
+# plt.ylabel('Learning Rate')
+# plt.title('Cosine Annealing Learning Rate Schedule')
+# plt.show()
 
 
 # In[ ]:
