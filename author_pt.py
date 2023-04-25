@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[62]:
+# In[11]:
 
+
+import os
 
 import torch
 import torch.nn as nn
@@ -155,7 +157,7 @@ train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=batch_size)
 
 
-# In[63]:
+# In[12]:
 
 
 vocab_size = len(vocab)
@@ -164,11 +166,14 @@ hidden_dim = 400
 output_dim = num_classes
 num_layers = 3
 
+load_best_model = True
+best_model_path = 'best_model.pt'
+
 model = LSTMClassifier(vocab_size, embedding_dim, hidden_dim, output_dim, num_layers)
 
 # Loss function and optimizer
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-4)
+optimizer = optim.Adam(model.parameters(), lr=0.0005, weight_decay=1e-4)
 
 # Training loop
 num_epochs = 100
@@ -176,9 +181,13 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
 model.to(device)
 
+if load_best_model and os.path.exists(best_model_path):
+    model.load_state_dict(torch.load(best_model_path))
+    print('Loaded best saved model...')
+
 # Learning rate scheduler
-scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.9, patience=2, verbose=True)
-# scheduler = CosineAnnealingLR(optimizer, T_max=num_epochs)
+# scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.9, patience=2, verbose=True)
+scheduler = CosineAnnealingLR(optimizer, T_max=num_epochs)
 # scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=int((num_epochs - 20) / 10), T_mult=2, eta_min=1e-4)
 
 
@@ -188,23 +197,23 @@ if torch.cuda.device_count() > 1 and useTwoGPUs:
     model = nn.DataParallel(model)
 
 
-# In[64]:
+# In[13]:
 
 
-# import matplotlib.pyplot as plt
-# import numpy as np
-#
-# epochs = num_epochs
-# lr = []
-# for i in range(epochs):
-#     scheduler.step()
-#     lr.append(optimizer.param_groups[0]['lr'])
-#
-# plt.plot(np.arange(epochs), lr)
-# plt.xlabel('Epochs')
-# plt.ylabel('Learning Rate')
-# plt.title('Cosine Annealing Learning Rate Schedule')
-# plt.show()
+import matplotlib.pyplot as plt
+import numpy as np
+
+epochs = num_epochs
+lr = []
+for i in range(epochs):
+    scheduler.step()
+    lr.append(optimizer.param_groups[0]['lr'])
+
+plt.plot(np.arange(epochs), lr)
+plt.xlabel('Epochs')
+plt.ylabel('Learning Rate')
+plt.title('Cosine Annealing Learning Rate Schedule')
+plt.show()
 
 
 # In[ ]:
@@ -222,12 +231,12 @@ for epoch in range(num_epochs):
 
     if val_loss < best_val_loss:
         best_val_loss = val_loss
-        torch.save(model.state_dict(), 'best_model.pt')
+        torch.save(model.state_dict(), best_model_path)
 
-    scheduler.step(val_loss)
-
+    # scheduler.step(val_loss)
+    scheduler.step()
 # Load the best model and evaluate on the test set
-model.load_state_dict(torch.load('best_model.pt'))
+model.load_state_dict(torch.load(best_model_path))
 test_loss, test_acc = evaluate(model, test_loader, criterion, device)
 print(f'Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}')
 
