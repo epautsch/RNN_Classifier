@@ -157,7 +157,7 @@ train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=batch_size)
 
 
-# In[12]:
+# In[14]:
 
 
 vocab_size = len(vocab)
@@ -173,7 +173,7 @@ model = LSTMClassifier(vocab_size, embedding_dim, hidden_dim, output_dim, num_la
 
 # Loss function and optimizer
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.00001, weight_decay=1e-4)
+optimizer = optim.Adam(model.parameters(), lr=0.000005, weight_decay=1e-4)
 
 # Training loop
 num_epochs = 10
@@ -208,7 +208,7 @@ if torch.cuda.device_count() > 1 and useTwoGPUs:
     model = nn.DataParallel(model)
 
 
-# In[13]:
+# In[15]:
 
 
 # import matplotlib.pyplot as plt
