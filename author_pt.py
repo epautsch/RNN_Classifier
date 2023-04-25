@@ -59,7 +59,7 @@ class LSTMClassifier(nn.Module):
 # In[ ]:
 
 
-def train_epoch(model, train_loader, criterion, optimizer, device):
+def train_epoch(model, train_loader, criterion, optimizer, device, epoch):
     model.train()
     running_loss = 0.0
     correct = 0
@@ -77,10 +77,13 @@ def train_epoch(model, train_loader, criterion, optimizer, device):
         total += targets.size(0)
         correct += (predicted == targets).sum().item()
 
+        if batch_idx % 5 == 0:
+            print(f'Epoch: {epoch + 1}, Iterations: {batch_idx}, Loss: {loss.item()}')
+
     return running_loss / len(train_loader), correct / total
 
 
-def evaluate(model, test_loader, criterion, device):
+def evaluate(model, test_loader, criterion, device, epoch):
     model.eval()
     running_loss = 0.0
     correct = 0
@@ -137,8 +140,9 @@ X_train, X_test, y_train, y_test = train_test_split(sequences, labels, test_size
 train_dataset = TextDataset(X_train, y_train)
 test_dataset = TextDataset(X_test, y_test)
 
-train_loader = DataLoader(train_dataset, batch_size=128, shuffle=True)
-test_loader = DataLoader(test_dataset, batch_size=128)
+batch_size = 512
+train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+test_loader = DataLoader(test_dataset, batch_size=batch_size)
 
 
 # In[ ]:
@@ -165,6 +169,11 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
 model.to(device)
 
+useTwoGPUs = True
+if torch.cuda.device_count() > 1 and useTwoGPUs:
+    print(f'Using {torch.cuda.device_count()} GPUs')
+    model = nn.DataParallel(model)
+
 
 # In[ ]:
 
@@ -172,8 +181,8 @@ model.to(device)
 best_val_loss = float('inf')
 
 for epoch in range(num_epochs):
-    train_loss, train_acc = train_epoch(model, train_loader, criterion, optimizer, device)
-    val_loss, val_acc = evaluate(model, test_loader, criterion, device)
+    train_loss, train_acc = train_epoch(model, train_loader, criterion, optimizer, device, epoch)
+    val_loss, val_acc = evaluate(model, test_loader, criterion, device, epoch)
 
     print(
         f'Epoch {epoch + 1}/{num_epochs}, Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}, Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}')
