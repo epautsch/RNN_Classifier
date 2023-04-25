@@ -173,7 +173,7 @@ model = LSTMClassifier(vocab_size, embedding_dim, hidden_dim, output_dim, num_la
 
 # Loss function and optimizer
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.0000025, weight_decay=1e-4)
+optimizer = optim.Adam(model.parameters(), lr=0.0000025, weight_decay=1e-5)
 
 # Training loop
 num_epochs = 10
@@ -246,7 +246,7 @@ for epoch in range(num_epochs):
         print('***NEW BEST MODEL SAVED***')
 
     # scheduler.step(val_loss)
-    scheduler.step()
+    # scheduler.step()
 # Load the best model and evaluate on the test set
 model.load_state_dict(torch.load(best_model_path))
 test_loss, test_acc = evaluate(model, test_loader, criterion, device)
