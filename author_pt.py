@@ -150,7 +150,7 @@ X_train, X_test, y_train, y_test = train_test_split(sequences, labels, test_size
 train_dataset = TextDataset(X_train, y_train)
 test_dataset = TextDataset(X_test, y_test)
 
-batch_size = 256
+batch_size = 128
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=batch_size)
 
