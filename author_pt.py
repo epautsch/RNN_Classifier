@@ -93,7 +93,7 @@ def train_epoch(model, train_loader, criterion, optimizer, device, epoch):
     return running_loss / len(train_loader), correct / total
 
 
-def evaluate(model, test_loader, criterion, device, epoch):
+def evaluate(model, test_loader, criterion, device):
     model.eval()
     running_loss = 0.0
     correct = 0
@@ -168,7 +168,7 @@ model = LSTMClassifier(vocab_size, embedding_dim, hidden_dim, output_dim, num_la
 
 # Loss function and optimizer
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=2e-5)
+optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-4)
 
 # Training loop
 num_epochs = 100
@@ -215,7 +215,7 @@ best_val_loss = float('inf')
 for epoch in range(num_epochs):
     print(optimizer.param_groups[0]['lr'])
     train_loss, train_acc = train_epoch(model, train_loader, criterion, optimizer, device, epoch)
-    val_loss, val_acc = evaluate(model, test_loader, criterion, device, epoch)
+    val_loss, val_acc = evaluate(model, test_loader, criterion, device)
 
     print(
         f'Epoch {epoch + 1}/{num_epochs}, Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}, Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}')
