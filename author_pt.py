@@ -48,6 +48,16 @@ class LSTMClassifier(nn.Module):
         self.lstm = nn.LSTM(embed_dim, hidden_dim, num_layers=num_layers, dropout=dropout, batch_first=True)
         self.fc = nn.Linear(hidden_dim, output_dim)
 
+        nn.init.xavier_uniform_(self.embedding.weight)
+        for name, param in self.lstm.named_parameters():
+            if 'weight_ih' in name:
+                nn.init.xavier_uniform_(param.data)
+            elif 'weight_hh' in name:
+                nn.init.orthogonal_(param.data)
+            elif 'bias' in name:
+                nn.init.zeros_(param.data)
+        nn.init.xavier_uniform_(self.fc.weight)
+
     def forward(self, x):
         x = self.embedding(x)
         x, _ = self.lstm(x)
@@ -140,12 +150,12 @@ X_train, X_test, y_train, y_test = train_test_split(sequences, labels, test_size
 train_dataset = TextDataset(X_train, y_train)
 test_dataset = TextDataset(X_test, y_test)
 
-batch_size = 1024
+batch_size = 512
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=batch_size)
 
 
-# In[27]:
+# In[39]:
 
 
 vocab_size = len(vocab)
@@ -158,7 +168,7 @@ model = LSTMClassifier(vocab_size, embedding_dim, hidden_dim, output_dim, num_la
 
 # Loss function and optimizer
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.00001)
+optimizer = optim.Adam(model.parameters(), lr=0.0001)
 
 # Training loop
 num_epochs = 100
@@ -168,7 +178,7 @@ model.to(device)
 
 # Learning rate scheduler
 # scheduler = CosineAnnealingLR(optimizer, T_max=num_epochs)
-scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=int(num_epochs / 5), T_mult=4, eta_min=1e-6)
+scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=int(num_epochs / 10), eta_min=1e-6)
 
 
 useTwoGPUs = True
@@ -177,7 +187,7 @@ if torch.cuda.device_count() > 1 and useTwoGPUs:
     model = nn.DataParallel(model)
 
 
-# In[28]:
+# In[40]:
 
 
 # import matplotlib.pyplot as plt
