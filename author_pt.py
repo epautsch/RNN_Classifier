@@ -173,7 +173,7 @@ model = LSTMClassifier(vocab_size, embedding_dim, hidden_dim, output_dim, num_la
 
 # Loss function and optimizer
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.0008, weight_decay=1e-3)
+optimizer = optim.Adam(model.parameters(), lr=0.0006, weight_decay=1e-3)
 
 # Training loop
 num_epochs = 20
